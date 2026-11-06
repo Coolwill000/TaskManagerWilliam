@@ -1,24 +1,71 @@
 package com.william.taskmanager.controller;
+
 import com.william.taskmanager.model.Task;
+import com.william.taskmanager.service.TaskService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import java.util.ArrayList;
-import java.util.List;
-import java.time.LocalDate;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
+
 @Controller
 public class TaskController {
-    @GetMapping("/")
-    public String home(Model model) {
-        List<Task> tasks = new ArrayList<>();
-        tasks.add(new Task(1, "Finish Java exercises", "Complete part 5 of the tutorial",
-                LocalDate.parse("2026-04-10"), false));
-        tasks.add(new Task(2, "Prepare presentation", "Create slides for class",
-                LocalDate.parse("2026-04-12"), true));
-        tasks.add(new Task(3, "Review code", "Check the controller and HTML page",
-                LocalDate.parse("2026-04-15"), false));
 
-        model.addAttribute("tasks", tasks);
+    private final TaskService taskService;
+
+    public TaskController(TaskService taskService) {
+        this.taskService = taskService;
+    }
+
+    @GetMapping("/")
+    public String showTaskList(Model model) {
+        model.addAttribute("tasks", taskService.getAllTasks());
         return "index";
+    }
+
+    @GetMapping("/addTask")
+    public String showAddTaskPage(Model model) {
+        model.addAttribute("task", new Task());
+        return "add-task";
+    }
+
+    @PostMapping("/addTask")
+    public String addTask(@Valid @ModelAttribute Task task, BindingResult result) {
+        if (result.hasErrors()) {
+            return "add-task";
+        }
+        taskService.addTask(task);
+        return "redirect:/";
+    }
+
+    @GetMapping("/editTask/{id}")
+    public String showEditTaskPage(@PathVariable int id, Model model) {
+        Task task = taskService.getTaskById(id);
+
+        if (task != null) {
+            model.addAttribute("task", task);
+            return "edit-task";
+        }
+
+        return "redirect:/";
+    }
+
+    @PostMapping("/updateTask")
+    public String updateTask(@Valid @ModelAttribute Task task, BindingResult result) {
+        if (result.hasErrors()) {
+            return "edit-task";
+        }
+
+        taskService.updateTask(task);
+        return "redirect:/";
+    }
+
+    @GetMapping("/deleteTask/{id}")
+    public String deleteTask(@PathVariable int id) {
+        taskService.deleteTask(id);
+        return "redirect:/";
     }
 }
